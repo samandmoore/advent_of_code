@@ -1,14 +1,26 @@
 values = File.readlines('input.txt')
-previous_value = nil
-current_value = nil
-values_greater_than_previous_value = []
+groups_greater_than_previous = 0
+a = []
+b = []
 
 values.each do |value|
-  current_value = value.to_i
-  if previous_value && current_value > previous_value
-    values_greater_than_previous_value << current_value
+  if a.size < 3
+    a << value.to_i
   end
-  previous_value = current_value
+
+  if a.size > 1
+    b << value.to_i
+  end
+
+  if a.size == 3 && b.size == 3
+    a_sum = a.reduce(&:+)
+    b_sum = b.reduce(&:+)
+    if b_sum > a_sum
+      groups_greater_than_previous = groups_greater_than_previous + 1
+    end
+    a = b
+    b = a.dup[1..-1]
+  end
 end
 
-puts "There are #{values_greater_than_previous_value.size} values greater than their previous values."
+puts "There are #{groups_greater_than_previous} groups greater than their previous groups."
