@@ -2,57 +2,54 @@ import 'dart:io';
 
 void main() {
   final rawReportLines = File('input.txt').readAsLinesSync();
-  final gammaRate = computeGammaRate(rawReportLines);
-  final epsilonRate = computeEpsilonRate(gammaRate);
-  final gammaRateDecimal = int.parse(gammaRate, radix: 2);
-  final epsilonRateDecimal = int.parse(epsilonRate, radix: 2);
-  print(
-    'Gamma Rate ($gammaRate) * Epsilon Rate ($epsilonRate) ' +
-        '= ${gammaRateDecimal * epsilonRateDecimal}',
+  final oxygenGeneratorRating = computeRatingByCriteria(
+    rawReportLines,
+    (ones, zeroes) => ones.length >= zeroes.length ? ones : zeroes,
   );
+  final c02ScrubberRating = computeRatingByCriteria(
+    rawReportLines,
+    (ones, zeroes) => ones.length >= zeroes.length ? zeroes : ones,
+  );
+  final lifeSupportRating = oxygenGeneratorRating.toDecimalFromBinary() *
+      c02ScrubberRating.toDecimalFromBinary();
+
+  print('Life support rating = $lifeSupportRating');
 }
 
-String computeGammaRate(List<String> reportLines) {
-  final length = reportLines[0].length;
-  var result = '';
-
-  for (var digitIndex = 0; digitIndex < length; digitIndex++) {
-    var ones = 0;
-    var zeroes = 0;
-
-    for (var reportLineIndex = 0;
-        reportLineIndex < reportLines.length;
-        reportLineIndex++) {
-      final digit = reportLines[reportLineIndex][digitIndex];
-      if (digit == '1') {
-        ones++;
-      } else {
-        zeroes++;
-      }
-    }
-
-    if (ones > zeroes) {
-      result += '1';
-    } else {
-      result += '0';
-    }
+extension on String {
+  int toDecimalFromBinary() {
+    return int.parse(this, radix: 2);
   }
-
-  return result;
 }
 
-String computeEpsilonRate(String gammaRate) {
-  var result = '';
+String computeRatingByCriteria(List<String> rawReportLines, Criteria criteria) {
+  var values = List.of(rawReportLines);
+  var valueIndex = 0;
 
-  for (var gammaRateIndex = 0;
-      gammaRateIndex < gammaRate.length;
-      gammaRateIndex++) {
-    if (gammaRate[gammaRateIndex] == '1') {
-      result += '0';
-    } else {
-      result += '1';
-    }
+  while (values.length > 1) {
+    print('Computing $criteria with $values');
+    values = findValuesMatchingCriteria(values, valueIndex, criteria);
+    valueIndex++;
   }
 
-  return result;
+  return values.first;
+}
+
+typedef Criteria = List<String> Function(
+    List<String> ones, List<String> zeroes);
+
+List<String> findValuesMatchingCriteria(
+  List<String> values,
+  int position,
+  Criteria criteria,
+) {
+  final mapping = <String, List<String>>{};
+  values.forEach((v) {
+    final digit = v[position];
+    mapping.putIfAbsent(digit, () => [])..add(v);
+  });
+  final ones = mapping['1'] ?? [];
+  final zeroes = mapping['0'] ?? [];
+
+  return criteria.call(ones, zeroes);
 }
