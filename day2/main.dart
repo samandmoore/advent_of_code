@@ -4,6 +4,7 @@ void main() {
   final rawInstructions = File('input.txt').readAsLinesSync();
   var depth = 0;
   var horizontalPosition = 0;
+  var aim = 0;
 
   for (final rawInstruction in rawInstructions) {
     final parts = rawInstruction.split(' ');
@@ -13,12 +14,13 @@ void main() {
     switch (instruction) {
       case 'forward':
         horizontalPosition += changeAmount;
+        depth += aim * changeAmount;
         break;
       case 'up':
-        depth -= changeAmount;
+        aim -= changeAmount;
         break;
       case 'down':
-        depth += changeAmount;
+        aim += changeAmount;
         break;
     }
   }
