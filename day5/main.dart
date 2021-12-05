@@ -5,12 +5,10 @@ void main() {
   final lines = parseLines(rawLines);
 
   final points = <Point, int>{};
+  // final partOneFilter = (Line l) => !l.isDiagonal;
+  final partTwoFilter = (Line l) => true;
 
-  lines
-      .where(
-        (l) => l.isHorizontal || l.isVertical,
-      )
-      .forEach(
+  lines.where(partTwoFilter).forEach(
         (l) => l.points.forEach((p) {
           if (points.containsKey(p)) {
             points[p] = points[p]! + 1;
@@ -24,6 +22,41 @@ void main() {
       points.entries.where((entry) => entry.value > 1).length;
 
   print('There are $numberOfPointsWithTwoOrMore with 2 or more hits');
+
+  printTheMap(lines);
+}
+
+void printTheMap(List<Line> lines) {
+  final points = <Point, int>{};
+  lines.forEach(
+    (l) => l.points.forEach((p) {
+      if (points.containsKey(p)) {
+        points[p] = points[p]! + 1;
+      } else {
+        points[p] = 1;
+      }
+    }),
+  );
+  final maxX = (points.keys.map((p) => p.x).toList()..sort()).last;
+  final maxY = (points.keys.map((p) => p.y).toList()..sort()).last;
+
+  int y = 0;
+  final sb = StringBuffer();
+  while (y <= maxY) {
+    int x = 0;
+    while (x <= maxX) {
+      final hits = points[Point(x: x, y: y)] ?? 0;
+      if (hits == 0) {
+        sb.write('.');
+      } else {
+        sb.write(hits);
+      }
+      x++;
+    }
+    sb.writeln();
+    y++;
+  }
+  print(sb.toString());
 }
 
 List<Line> parseLines(List<String> rawLines) {
@@ -74,6 +107,8 @@ class Line {
 
   bool get isHorizontal => start.y == end.y;
 
+  bool get isDiagonal => !isVertical && !isHorizontal;
+
   List<Point> get points {
     final points = <Point>[];
     if (isVertical) {
@@ -95,6 +130,18 @@ class Line {
           Point(
             x: start.x + (diff.sign * i),
             y: start.y,
+          ),
+        );
+      }
+    } else {
+      final xdiff = end.x - start.x;
+      final ydiff = end.y - start.y;
+      final xlength = xdiff.abs();
+      for (var x = 0; x <= xlength; x++) {
+        points.add(
+          Point(
+            x: start.x + (xdiff.sign * x),
+            y: start.y + (ydiff.sign * x),
           ),
         );
       }
