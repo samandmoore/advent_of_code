@@ -6,27 +6,34 @@ void main() {
   final numbers = parseNumbers(rawLines.removeAt(0));
   final boards = parseBoardsFromInput(rawLines..removeAt(0));
 
-  final winner = determineWinningBoard(numbers, boards);
+  final results = determineAllWinners(numbers, boards);
+  final winner = results.first;
+  final lastWinner = results.last;
 
-  if (winner != null) {
-    print('The winning board is:');
-    print('$winner');
-    print('Winning score: ${winner.calculateWinningScore()}');
-  } else {
-    print('Doh! No winner found.');
-  }
+  print('The winning board is:');
+  print('$winner');
+  print('Winning score: ${winner.calculateWinningScore()}');
+
+  print('The last winning board is:');
+  print('$lastWinner');
+  print('Last winning score: ${lastWinner.calculateWinningScore()}');
 }
 
-Board? determineWinningBoard(Iterable<int> numbers, List<Board> boards) {
+List<Board> determineAllWinners(Iterable<int> numbers, List<Board> boards) {
+  final winners = <Board>[];
+
   for (final number in numbers) {
     for (final board in boards) {
+      if (winners.contains(board)) continue;
+
       board.addNumber(number);
       if (board.checkForWinner()) {
-        return board;
+        winners.add(board);
       }
     }
   }
-  return null;
+
+  return winners;
 }
 
 Iterable<int> parseNumbers(String numbers) {
