@@ -24,7 +24,10 @@ void main() {
     crabsByPosition.entries.forEach((entry) {
       final position = entry.key;
       final numberOfCrabsAtPosition = entry.value;
-      cost += (position - currentPosition).abs() * numberOfCrabsAtPosition;
+      final changeCost = (position - currentPosition).abs();
+      // using the nth triangular number formula n=4, (1 + 2 + 3 + 4 = 10)
+      final changeCostAdjusted = ((changeCost * (changeCost + 1)) / 2).round();
+      cost += changeCostAdjusted * numberOfCrabsAtPosition;
     });
 
     positionCosts[currentPosition] = cost;
