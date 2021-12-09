@@ -1,44 +1,100 @@
 import 'dart:io';
 
-void main() {
-  final rawLines = File('input.txt').readAsLinesSync();
-  final signals = <List<String>>[];
-  final outputs = <List<String>>[];
+typedef Signal = Set<String>;
 
-  rawLines.forEach((l) {
-    final parts = l.split('|');
-    signals.add(parts.first.trim().split(' '));
-    outputs.add(parts.last.trim().split(' '));
-  });
+class Line {
+  final List<Signal> inputs;
+  final List<Signal> outputs;
 
-  var oneFourSevenOrEights = 0;
-
-  outputs.forEach((outputLine) {
-    outputLine.forEach((output) {
-      final lengths = [
-        numberToSignals[1],
-        numberToSignals[4],
-        numberToSignals[7],
-        numberToSignals[8],
-      ].map((v) => v!.length);
-      if (lengths.contains(output.length)) {
-        oneFourSevenOrEights++;
-      }
-    });
-  });
-
-  print('There are $oneFourSevenOrEights 1s, 4s, 7s, or 8s.');
+  Line({required this.inputs, required this.outputs});
 }
 
-final numberToSignals = <int, String>{
-  0: 'abcefg',
-  1: 'cf',
-  2: 'acdeg',
-  3: 'acdfg',
-  4: 'bcdf',
-  5: 'abdfg',
-  6: 'abdefg',
-  7: 'acf',
-  8: 'abcdefg',
-  9: 'abcdfg',
-};
+void main() {
+  final rawLines = File('input.txt').readAsLinesSync();
+  final lines = rawLines.map((l) {
+    final parts = l.split('|');
+
+    final rawInputs = parts.first.trim().split(' ');
+    final inputs = rawInputs.map((s) => s.split('').toSet()).toList();
+
+    final rawOutputs = parts.last.trim().split(' ');
+    final outputs = rawOutputs.map((s) => s.split('').toSet()).toList();
+
+    return Line(inputs: inputs, outputs: outputs);
+  });
+
+  final outputValues = <int>[];
+
+  for (final line in lines) {
+    final inputs = List.of(line.inputs);
+
+    // cf
+    final one = inputs.removeAt(inputs.indexWhere((s) => s.length == 2));
+
+    // acf
+    final seven = inputs.removeAt(inputs.indexWhere((s) => s.length == 3));
+
+    // bcdf
+    final four = inputs.removeAt(inputs.indexWhere((s) => s.length == 4));
+
+    // abcdefg
+    final eight = inputs.removeAt(inputs.indexWhere((s) => s.length == 7));
+
+    final zeroSixNine = inputs.where((s) => s.length == 6).toList();
+
+    // abcdfg
+    final nine = zeroSixNine.singleWhere((s) => s.difference(four).length == 2);
+    inputs.remove(nine);
+    zeroSixNine.remove(nine);
+
+    // six
+    final six = zeroSixNine.singleWhere((s) => s.difference(one).length == 5);
+    inputs.remove(six);
+    zeroSixNine.remove(six);
+
+    // zero
+    final zero = zeroSixNine.singleWhere((s) => s.difference(one).length == 4);
+    inputs.remove(zero);
+    zeroSixNine.remove(zero);
+
+    final twoThreeFive = inputs;
+
+    // three
+    final three =
+        twoThreeFive.singleWhere((s) => s.difference(one).length == 3);
+    inputs.remove(three);
+    twoThreeFive.remove(three);
+
+    // two
+    final two = twoThreeFive.singleWhere((s) => s.difference(six).length == 1);
+    inputs.remove(two);
+    twoThreeFive.remove(two);
+
+    // five
+    final five = twoThreeFive.first;
+
+    final setToString = (Set<String> set) => (set.toList()..sort()).join('');
+
+    final numberToSignal = <String, String>{
+      setToString(zero): '0',
+      setToString(one): '1',
+      setToString(two): '2',
+      setToString(three): '3',
+      setToString(four): '4',
+      setToString(five): '5',
+      setToString(six): '6',
+      setToString(seven): '7',
+      setToString(eight): '8',
+      setToString(nine): '9',
+    };
+
+    final outputs = line.outputs;
+    final outputValueString = outputs.map((o) {
+      final value = numberToSignal[setToString(o)];
+      return value;
+    }).join('');
+    outputValues.add(int.parse(outputValueString));
+  }
+
+  print('Sum of output values is: ${outputValues.reduce((sum, v) => sum + v)}');
+}
