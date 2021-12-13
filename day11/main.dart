@@ -6,14 +6,13 @@ void main() {
   final grid = parseLinesToGrid(lines);
 
   int flashed = 0;
-
-  var numberOfIterations = 100;
-  while (numberOfIterations > 0) {
-    flashed += runIteration(grid);
-    numberOfIterations--;
+  var numberOfIterations = 0;
+  while (flashed < 100) {
+    numberOfIterations++;
+    flashed = runIteration(grid);
   }
 
-  print('Flashed: ${flashed}');
+  print('All of them flashed at step: ${numberOfIterations}');
 }
 
 int runIteration(Grid grid) {
