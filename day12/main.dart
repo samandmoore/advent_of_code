@@ -12,6 +12,8 @@ void main() {
   goodPaths.forEach(print);
 }
 
+bool isSmall(String value) => value.toLowerCase() == value;
+
 List<String> findPaths({
   required Map<String, List<String>> graph,
   required List<List<String>> paths,
@@ -23,8 +25,22 @@ List<String> findPaths({
 
   final adjacents = graph[start] ?? [];
   for (var adjacent in adjacents) {
-    if (adjacent.toLowerCase() == adjacent && visited.contains(adjacent))
-      continue;
+    final visitedSameSmallTwice = visited
+        .where((v) => isSmall(v))
+        .fold(
+          <String, int>{},
+          (Map<String, int> map, key) {
+            map[key] = (map[key] ?? 0) + 1;
+            return map;
+          },
+        )
+        .values
+        .any((v) => v > 1);
+
+    if (isSmall(adjacent) &&
+        visited.contains(adjacent) &&
+        visitedSameSmallTwice) continue;
+
     paths.add(
       findPaths(
         graph: graph,
@@ -44,7 +60,9 @@ Map<String, List<String>> buildAdjacencyList(List<String> lines) {
     final vertA = parts.first;
     final vertB = parts.last;
     final aEdges = adjacencyList.putIfAbsent(vertA, () => []);
-    aEdges.add(vertB);
+    if (vertB != 'start') {
+      aEdges.add(vertB);
+    }
     final bEdges = adjacencyList.putIfAbsent(vertB, () => []);
     if (vertA != 'start') {
       bEdges.add(vertA);
