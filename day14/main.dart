@@ -12,57 +12,45 @@ void main() {
     }),
   );
 
+  final elementCount = template.groupFoldBy<String, int>(
+      (element) => element, (int? previous, _) => (previous ?? 0) + 1);
+
+  var pairCount = <Pair, int>{};
+  for (var i = 0; i < template.length; i++) {
+    if (i + 1 == template.length) continue;
+    final pair = Pair(template[i], template[i + 1]);
+    final count = pairCount[pair] ??= 0;
+    pairCount[pair] = count + 1;
+  }
+
   final maxIterations = 40;
   var iteration = 0;
-  var currentTemplate = List.of(template);
   while (iteration < maxIterations) {
     iteration++;
-    currentTemplate = runIteration(currentTemplate, rules);
+    final newPairCount = <Pair, int>{};
+    pairCount.entries.forEach((entry) {
+      final pair = entry.key;
+      final countForThisPair = entry.value;
+      final newElement = rules[pair.combined]!;
+
+      final existingElementCount = elementCount[newElement] ??= 0;
+      elementCount[newElement] = existingElementCount + countForThisPair;
+
+      final newPairA = Pair(pair.a, newElement);
+      final aCount = newPairCount[newPairA] ??= 0;
+      newPairCount[newPairA] = aCount + countForThisPair;
+
+      final newPairB = Pair(newElement, pair.b);
+      final bCount = newPairCount[newPairB] ??= 0;
+      newPairCount[newPairB] = bCount + countForThisPair;
+    });
+    pairCount = newPairCount;
     print('After iteration $iteration');
   }
 
-  final score = mostCommonMinusLeastCommon(currentTemplate);
+  final sortedCounts = elementCount.values.toList()..sort();
+  final score = sortedCounts.last - sortedCounts.first;
   print('Score: $score');
-}
-
-int mostCommonMinusLeastCommon(List<String> template) {
-  final groups = template.groupFoldBy<String, int>(
-      (element) => element, (int? previous, _) => (previous ?? 0) + 1);
-  final sortedCounts = groups.values.toList()..sort();
-  return sortedCounts.last - sortedCounts.first;
-}
-
-List<String> runIteration(
-  List<String> currentTemplate,
-  Map<String, String> rules,
-) {
-  final sw = Stopwatch()..start();
-
-  final startPairing = sw.elapsed;
-  final chunks = <Pair>[];
-  for (var i = 0; i < currentTemplate.length; i++) {
-    if (i + 1 == currentTemplate.length) continue;
-    chunks.add(Pair(currentTemplate[i], currentTemplate[i + 1]));
-  }
-  print('Spent ${sw.elapsed - startPairing} in pairing');
-
-  final newTemplateBuffer = <String>[];
-  final startInserting = sw.elapsed;
-  final chunksWithInsertions =
-      chunks.map((c) => [c.a, rules[c.combined]!, c.b]).toList();
-  print('Spent ${sw.elapsed - startInserting} in inserting');
-
-  final startCombining = sw.elapsed;
-  for (var i = 0; i < chunksWithInsertions.length; i++) {
-    if (i == 0) {
-      newTemplateBuffer.addAll(chunksWithInsertions[i]);
-    } else {
-      newTemplateBuffer.addAll(chunksWithInsertions[i].skip(1));
-    }
-  }
-  print('Spent ${sw.elapsed - startCombining} in combining');
-
-  return newTemplateBuffer;
 }
 
 class Pair {
@@ -75,4 +63,12 @@ class Pair {
 
   @override
   String toString() => "$a$b";
+
+  @override
+  int get hashCode => Object.hash(a, b);
+
+  @override
+  bool operator ==(Object? other) {
+    return other is Pair && a == other.a && b == other.b;
+  }
 }
