@@ -20,6 +20,43 @@ void main() {
       )
       .toList();
 
+  printShortestPath(grid, grid.last.last);
+
+  final bigGrid = buildBigGrid(grid);
+
+  printShortestPath(bigGrid, bigGrid.last.last);
+}
+
+Grid buildBigGrid(List<List<Vertex>> grid) {
+  final bigGrid = <List<Vertex>>[];
+  final originalHeight = grid.length;
+  final originalWidth = grid.first.length;
+  final bigHeight = grid.length * 5;
+  final bigWidth = grid.first.length * 5;
+  for (var y = 0; y < bigHeight; y++) {
+    final row = <Vertex>[];
+    for (var x = 0; x < bigWidth; x++) {
+      final yModifier = (y / originalHeight).floor();
+      final xModifier = (x / originalWidth).floor();
+      final originalY = y % originalHeight;
+      final originalX = x % originalWidth;
+      final originalVertex = grid[originalY][originalX];
+      var newWeight = (originalVertex.weight + yModifier + xModifier) % 9;
+      if (newWeight == 0) newWeight = 9;
+      row.add(Vertex(point: Point(x: x, y: y), weight: newWeight));
+    }
+    bigGrid.add(row);
+  }
+  return bigGrid;
+}
+
+void printShortestPath(Grid grid, Vertex destination) {
+  Map<Point, int> distances = calculateShortestPathTree(grid);
+  final shortestDistance = distances[destination.point];
+  print('Shortest path distance to $destination is ${shortestDistance}');
+}
+
+Map<Point, int> calculateShortestPathTree(Grid grid) {
   final distances = <Point, int>{};
   final q = PriorityQueue<Vertex>((a, b) => a.weight.compareTo(b.weight));
   final startVertex = grid.first.first;
@@ -46,10 +83,7 @@ void main() {
       }
     }
   }
-
-  final destination = grid.last.last;
-  print(
-      'Shortest path distance to $destination is ${distances[destination.point]}');
+  return distances;
 }
 
 List<Vertex> getAdjacentVerticies(Vertex vertex, Grid grid) {
