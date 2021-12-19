@@ -1,0 +1,5 @@
+name: day16
+environment:
+  sdk: ">=2.14.0"
+dependencies:
+  collection: any
