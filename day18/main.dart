@@ -24,7 +24,11 @@ void partOne() {
     number = add(number, newNumber);
     print(number);
     reduce(number);
+    print(number);
   }
+
+  //TODO: there's an issue where 5,5 is being selected as the right
+  // instead of 2,2
 }
 
 void exploration() {
@@ -92,27 +96,26 @@ void exploration() {
 void reduce(SnailfishPair number) {
   var toExplode = findNextToExplode(number);
   while (toExplode != null) {
+    print(number);
+
     var regularToLeft = findRegularToLeft(toExplode);
     var regularToRight = findRegularToRight(toExplode);
 
-    final newPair = SnailfishPair(
-      left: RegularNumber(
-          regularToLeft != null && regularToLeft.parent == toExplode.parent
-              ? (toExplode.left as RegularNumber).value + regularToLeft.value
-              : 0),
-      right: RegularNumber(
-          regularToRight != null && regularToRight.parent == toExplode.parent
-              ? (toExplode.right as RegularNumber).value + regularToRight.value
-              : 0),
-    );
-
-    if ((toExplode.parent!.parent as SnailfishPair).left == toExplode.parent) {
-      (toExplode.parent!.parent! as SnailfishPair).left = newPair;
-      newPair.parent = toExplode.parent!.parent!;
+    final newNumber = RegularNumber(0);
+    final parent = (toExplode.parent as SnailfishPair);
+    if (parent.left == toExplode) {
+      if (regularToRight != null && regularToRight.parent == toExplode.parent) {
+        final right = (toExplode.right as RegularNumber);
+        regularToRight.value = right.value + regularToRight.value;
+      }
+      parent.left = newNumber;
     }
-    if ((toExplode.parent!.parent as SnailfishPair).right == toExplode.parent) {
-      (toExplode.parent!.parent! as SnailfishPair).right = newPair;
-      newPair.parent = toExplode.parent!.parent!;
+    if (parent.right == toExplode) {
+      if (regularToLeft != null && regularToLeft.parent == toExplode.parent) {
+        final left = (toExplode.left as RegularNumber);
+        regularToLeft.value = left.value + regularToLeft.value;
+      }
+      parent.right = newNumber;
     }
 
     if (regularToLeft != null && regularToLeft.parent != toExplode.parent) {
@@ -123,8 +126,6 @@ void reduce(SnailfishPair number) {
       regularToRight.value =
           regularToRight.value + (toExplode.right as RegularNumber).value;
     }
-
-    print(number);
 
     toExplode = findNextToExplode(number);
   }
@@ -145,8 +146,13 @@ RegularNumber? findRegularToLeft(
 
   final parent = number.parent! as SnailfishPair;
 
-  if (parent.left != number && parent.left is RegularNumber) {
-    return parent.left as RegularNumber;
+  if (parent.left != number) {
+    if (parent.left is RegularNumber) {
+      return parent.left as RegularNumber;
+    }
+    if (parent.left is SnailfishPair) {
+      return findRightmostRegular(parent.left);
+    }
   }
 
   return findRegularToLeft(parent, number);
@@ -165,8 +171,13 @@ RegularNumber? findRegularToRight(
 
   final parent = number.parent! as SnailfishPair;
 
-  if (parent.right != number && parent.right is RegularNumber) {
-    return parent.right as RegularNumber;
+  if (parent.right != number) {
+    if (parent.right is RegularNumber) {
+      return parent.right as RegularNumber;
+    }
+    if (parent.right is SnailfishPair) {
+      return findLeftmostRegular(parent.right);
+    }
   }
 
   return findRegularToRight(parent, number);
