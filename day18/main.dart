@@ -1,5 +1,37 @@
 void main() {
-  partOne();
+  slightlyLargerExample();
+}
+
+void slightlyLargerExample() {
+  final rawNumbers = '''
+    [[[[6,7],[6,7]],[[7,7],[0,7]]],[[[8,7],[7,7]],[[8,8],[8,0]]]]
+    [[[[2,4],7],[6,[0,5]]],[[[6,8],[2,8]],[[2,1],[4,5]]]]
+  '''
+      .trim()
+      .split('\n')
+      .map((l) => l.trim())
+      .toList();
+
+  final firstRawNumber = rawNumbers.first;
+  final firstNumber = parseNumber(firstRawNumber);
+  var number = firstNumber;
+
+//  [[[[6,7],[6,7]],[[7,7],[0,7]]],[[[8,7],[7,7]],[[8,8],[8,0]]]]
+//+ [[[[2,4],7],[6,[0,5]]],[[[6,8],[2,8]],[[2,1],[4,5]]]]
+//= [[[[7,7],[7,7]],[[7,8],[7,8]]],[[[8,9],[7,7]],[[9,5],[9,0]]]]
+//
+//  should be...
+//  [[[[7,0],[7,7]],[[7,7],[7,8]]],[[[7,7],[8,8]],[[7,7],[8,7]]]]
+
+  for (final rawNumber in rawNumbers.skip(1)) {
+    final newNumber = parseNumber(rawNumber);
+    print('  $number');
+    print('+ $newNumber');
+    number = add(number, newNumber);
+    reduce(number);
+    print('= $number');
+    print('');
+  }
 }
 
 void partOne() {
@@ -26,12 +58,29 @@ void partOne() {
     reduce(number);
     print(number);
   }
-
-  //TODO: there's an issue where 5,5 is being selected as the right
-  // instead of 2,2
 }
 
-void exploration() {
+void reduceWithExplodeAndSplitExample() {
+  var number = parseNumber('[[[[4,3],4],4],[7,[[8,4],9]]]');
+  number = add(number, parseNumber('[1,1]'));
+  print(number);
+  reduce(number);
+  print(number);
+}
+
+void splitExamples() {
+  var number = parseNumber('[[[[0,7],4],[15,[0,13]]],[1,1]]');
+  var toSplit = findNextToSplit(number);
+  print(number);
+  print(toSplit);
+
+  number = parseNumber('[[[[0,7],4],[[7,8],[0,13]]],[1,1]]');
+  toSplit = findNextToSplit(number);
+  print(number);
+  print(toSplit);
+}
+
+void explodeExamples() {
   var number = parseNumber('[[[[[9,8],1],2],3],4]');
   var toExplode = findNextToExplode(number);
   var regularToLeft = findRegularToLeft(toExplode!);
@@ -95,42 +144,58 @@ void exploration() {
 
 void reduce(SnailfishPair number) {
   var toExplode = findNextToExplode(number);
-  while (toExplode != null) {
-    print(number);
+  var toSplit = findNextToSplit(number);
+  print(number);
+  while (toExplode != null || toSplit != null) {
+    if (toExplode != null) {
+      var regularToLeft = findRegularToLeft(toExplode);
+      var regularToRight = findRegularToRight(toExplode);
 
-    var regularToLeft = findRegularToLeft(toExplode);
-    var regularToRight = findRegularToRight(toExplode);
-
-    final newNumber = RegularNumber(0);
-    final parent = (toExplode.parent as SnailfishPair);
-    if (parent.left == toExplode) {
-      if (regularToRight != null && regularToRight.parent == toExplode.parent) {
-        final right = (toExplode.right as RegularNumber);
-        regularToRight.value = right.value + regularToRight.value;
+      final parent = (toExplode.parent as SnailfishPair);
+      final newNumber = RegularNumber(0)..parent = parent;
+      if (parent.left == toExplode) {
+        if (regularToRight != null &&
+            regularToRight.parent == toExplode.parent) {
+          final right = (toExplode.right as RegularNumber);
+          regularToRight.value = right.value + regularToRight.value;
+        }
+        parent.left = newNumber;
       }
-      parent.left = newNumber;
-    }
-    if (parent.right == toExplode) {
-      if (regularToLeft != null && regularToLeft.parent == toExplode.parent) {
-        final left = (toExplode.left as RegularNumber);
-        regularToLeft.value = left.value + regularToLeft.value;
+      if (parent.right == toExplode) {
+        if (regularToLeft != null && regularToLeft.parent == toExplode.parent) {
+          final left = (toExplode.left as RegularNumber);
+          regularToLeft.value = left.value + regularToLeft.value;
+        }
+        parent.right = newNumber;
       }
-      parent.right = newNumber;
-    }
 
-    if (regularToLeft != null && regularToLeft.parent != toExplode.parent) {
-      regularToLeft.value =
-          regularToLeft.value + (toExplode.left as RegularNumber).value;
+      if (regularToLeft != null && regularToLeft.parent != toExplode.parent) {
+        regularToLeft.value =
+            regularToLeft.value + (toExplode.left as RegularNumber).value;
+      }
+      if (regularToRight != null && regularToRight.parent != toExplode.parent) {
+        regularToRight.value =
+            regularToRight.value + (toExplode.right as RegularNumber).value;
+      }
+    } else if (toSplit != null) {
+      final parent = toSplit.parent as SnailfishPair;
+      final leftValue = (toSplit.value / 2).floor();
+      final rightValue = (toSplit.value / 2).ceil();
+      final pair = SnailfishPair(
+        left: RegularNumber(leftValue),
+        right: RegularNumber(rightValue),
+      )..parent = parent;
+      if (parent.left == toSplit) {
+        parent.left = pair;
+      }
+      if (parent.right == toSplit) {
+        parent.right = pair;
+      }
     }
-    if (regularToRight != null && regularToRight.parent != toExplode.parent) {
-      regularToRight.value =
-          regularToRight.value + (toExplode.right as RegularNumber).value;
-    }
-
     toExplode = findNextToExplode(number);
+    toSplit = findNextToSplit(number);
+    print(number);
   }
-
-  // TODO: implement number splitting
 }
 
 RegularNumber? findRegularToLeft(
@@ -227,6 +292,26 @@ SnailfishPair? findNextToExplode(SnailfishPair number, [int depth = 1]) {
 
   if (number.right is SnailfishPair) {
     final right = findNextToExplode(number.right as SnailfishPair, depth + 1);
+    if (right != null) {
+      return right;
+    }
+  }
+
+  return null;
+}
+
+RegularNumber? findNextToSplit(SnailfishNumber number) {
+  if (number is RegularNumber && number.value >= 10) {
+    return number;
+  }
+
+  if (number is SnailfishPair) {
+    final left = findNextToSplit(number.left);
+    if (left != null) {
+      return left;
+    }
+
+    final right = findNextToSplit(number.right);
     if (right != null) {
       return right;
     }
