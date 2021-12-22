@@ -1,7 +1,8 @@
 import 'dart:io';
+import 'dart:math';
 
 void main() {
-  final lines = File('sample-input-part2.txt').readAsLinesSync();
+  final lines = File('input.txt').readAsLinesSync();
   final parseRange = (String rangeString) {
     final parts = rangeString.split('=').last.split('..').map(
           (x) => int.parse(x),
@@ -24,6 +25,34 @@ void main() {
   });
   print(instructions.join('\n'));
 
+  partOne(instructions);
+  partTwo(instructions);
+}
+
+void partTwo(Iterable<Instruction> instructions) {
+  final filled = <Instruction>[];
+  for (final instruction in instructions) {
+    final toAdd = <Instruction>[];
+    if (instruction.on) {
+      toAdd.add(instruction);
+    }
+    for (var f in filled) {
+      final intersection = f.findIntersection(instruction);
+      if (intersection != null) {
+        toAdd.add(intersection);
+      }
+    }
+    filled.addAll(toAdd);
+  }
+
+  final enabledCubeCount = filled
+      .map((i) => i.cubeCount * (i.on ? 1 : -1))
+      .fold(0, (int sum, value) => sum + value);
+
+  print(enabledCubeCount);
+}
+
+void partOne(Iterable<Instruction> instructions) {
   final withinInitArea = instructions.where(
     (i) =>
         rangeWithinInitArea(i.x) &&
@@ -85,6 +114,10 @@ class Instruction {
     required this.z,
   });
 
+  int get cubeCount {
+    return (x.max - x.min + 1) * (y.max - y.min + 1) * (z.max - z.min + 1);
+  }
+
   @override
   String toString() {
     return 'on x=$x,y=$y,z=$z';
@@ -98,6 +131,24 @@ class Instruction {
         }
       }
     }
+  }
+
+  Instruction? findIntersection(Instruction other) {
+    if (x.min <= other.x.max &&
+        x.max >= other.x.min &&
+        y.min <= other.y.max &&
+        y.max >= other.y.min &&
+        z.min <= other.z.max &&
+        z.max >= other.z.min) {
+      return Instruction(
+        on: !on,
+        x: Range(min: max(x.min, other.x.min), max: min(x.max, other.x.max)),
+        y: Range(min: max(y.min, other.y.min), max: min(y.max, other.y.max)),
+        z: Range(min: max(z.min, other.z.min), max: min(z.max, other.z.max)),
+      );
+    }
+
+    return null;
   }
 }
 
