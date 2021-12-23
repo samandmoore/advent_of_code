@@ -1,30 +1,33 @@
-void main() {
-  final input = '''
-    Player 1 starting position: 1
-    Player 2 starting position: 5
-  ''';
-  final startingPositions = input
-      .trim()
-      .split('\n')
-      .map(
-        (l) => l.split(':').last.trim(),
-      )
-      .map(
-        (v) => int.parse(v),
-      );
-  const winningScore = 1000;
-  final scores = {
-    0: 0,
-    1: 0,
-  };
-  final positions = {
-    0: startingPositions.first,
-    1: startingPositions.last,
-  };
-  var turnIndex = 0;
-  final die = DeterministicDie();
+import 'package:collection/collection.dart';
 
-  final roll_sums_frequency = {
+class GameState {
+  final Map<int, int> scores;
+  final Map<int, int> positions;
+  final int turnIndex;
+
+  GameState({
+    required this.scores,
+    required this.positions,
+    required this.turnIndex,
+  });
+
+  @override
+  int get hashCode => Object.hash(scores, positions, turnIndex);
+
+  @override
+  bool operator ==(Object? other) =>
+      other is GameState &&
+      DeepCollectionEquality().equals(scores, other.scores) &&
+      DeepCollectionEquality().equals(positions, other.positions) &&
+      turnIndex == other.turnIndex;
+}
+
+void main() {
+  final startingPositions = getStartingPositions();
+
+  const winningScore = 21;
+
+  final rollSumsFrequency = {
     3: 1,
     4: 3,
     5: 6,
@@ -34,29 +37,83 @@ void main() {
     9: 1,
   };
 
-  while (scores.values.every((score) => score < winningScore)) {
-    // even number is player one, odd number is player two
-    final playerIndex = turnIndex % 2;
-    final rolls = [die.roll(), die.roll(), die.roll()];
-    final spacesToMove = rolls.fold(0, (int sum, roll) => sum + roll);
-    final currentPosition = positions[playerIndex]!;
-    // 5 + 6 = 11 % 10 = 1
-    var newPosition = (currentPosition + spacesToMove) % 10;
-    if (newPosition == 0) {
-      newPosition = 10;
-    }
-    positions[playerIndex] = newPosition;
-    scores[playerIndex] = scores[playerIndex]! + newPosition;
-    print(
-        'Player ${playerIndex + 1} rolls ${rolls} and moves to space ${newPosition} for a total score of ${scores[playerIndex]}');
+  final initialState = GameState(
+    positions: {0: startingPositions.first, 1: startingPositions.last},
+    scores: {0: 0, 1: 0},
+    turnIndex: 0,
+  );
+  var states = <GameState, int>{
+    initialState: 1,
+  };
+  final winsByPlayer = {
+    0: 0,
+    1: 1,
+  };
 
-    turnIndex++;
+  while (states.isNotEmpty) {
+    final newStates = <GameState, int>{};
+
+    states.entries.forEach((entry) {
+      final state = entry.key;
+      final count = entry.value;
+      // even number is player one, odd number is player two
+      final playerIndex = state.turnIndex % 2;
+
+      rollSumsFrequency.entries.forEach((entry) {
+        final sum = entry.key;
+        final numberOfOutcomes = entry.value;
+        final currentPosition = state.positions[playerIndex]!;
+        // 5 + 6 = 11 % 10 = 1
+        var newPosition = (currentPosition + sum) % 10;
+        if (newPosition == 0) {
+          newPosition = 10;
+        }
+        final newState = GameState(
+          positions: Map.of(state.positions)
+            ..addAll({playerIndex: newPosition}),
+          scores: Map.of(state.scores)
+            ..addAll({playerIndex: state.scores[playerIndex]! + newPosition}),
+          turnIndex: state.turnIndex + 1,
+        );
+
+        // check for winners and losers
+        if (newState.scores[playerIndex]! >= winningScore) {
+          winsByPlayer[playerIndex] =
+              winsByPlayer[playerIndex]! + (count * numberOfOutcomes);
+        } else {
+          newStates[newState] ??= 0;
+          newStates[newState] =
+              newStates[newState]! + (count * numberOfOutcomes);
+        }
+      });
+    });
+
+    print('total states: ${newStates.length}');
+    states = newStates;
   }
 
-  final loser = scores[0]! < winningScore ? 0 : 1;
-  print('Player #${loser + 1} loses with a score of ${scores[loser]}');
-  final result = scores[loser]! * die.rollCount;
-  print('Die was rolled ${die.rollCount} for a result of $result');
+  print(winsByPlayer);
+}
+
+Iterable<int> getStartingPositions() {
+  final sampleInput = '''
+    Player 1 starting position: 4
+    Player 2 starting position: 8
+  ''';
+  final input = '''
+    Player 1 starting position: 1
+    Player 2 starting position: 5
+  ''';
+  final startingPositions = sampleInput
+      .trim()
+      .split('\n')
+      .map(
+        (l) => l.split(':').last.trim(),
+      )
+      .map(
+        (v) => int.parse(v),
+      );
+  return startingPositions;
 }
 
 class DeterministicDie {
@@ -75,34 +132,3 @@ class DeterministicDie {
     return value;
   }
 }
-
-/*
-3 1 1 1
-4 1 1 2
-5 1 1 3
-4 1 2 1
-5 1 2 2
-6 1 2 3
-5 1 3 1
-6 1 3 2
-7 1 3 3
-4 2 1 1
-5 2 1 2
-6 2 1 3
-5 2 2 1
-6 2 2 2
-7 2 2 3
-6 2 3 1
-7 2 3 2
-8 2 3 3
-5 3 1 1
-6 3 1 2
-7 3 1 3
-6 3 2 1
-7 3 2 2
-8 3 2 3
-7 3 3 1
-8 3 3 2
-9 3 3 3
-*/
-
