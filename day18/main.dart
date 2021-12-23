@@ -1,407 +1,282 @@
+import 'dart:io';
+import 'dart:math';
+
 void main() {
-  slightlyLargerExample();
+  // partOne(values);
+  partTwo();
 }
 
-void slightlyLargerExample() {
-  final rawNumbers = '''
-    [[[[6,7],[6,7]],[[7,7],[0,7]]],[[[8,7],[7,7]],[[8,8],[8,0]]]]
-    [[[[2,4],7],[6,[0,5]]],[[[6,8],[2,8]],[[2,1],[4,5]]]]
-  '''
-      .trim()
-      .split('\n')
-      .map((l) => l.trim())
-      .toList();
+void partTwo() {
+  final lines = File('input.txt').readAsLinesSync();
+  final values = lines.map((l) => l.trim()).toList();
 
-  final firstRawNumber = rawNumbers.first;
-  final firstNumber = parseNumber(firstRawNumber);
-  var number = firstNumber;
+  var largestMagnitude = 0;
+  for (var i = 0; i < values.length - 1; i++) {
+    for (var j = 1; j < values.length; j++) {
+      final a = Parser(input: values[i]).run() as Pair;
+      final a1 = Parser(input: values[i]).run() as Pair;
+      final b = Parser(input: values[j]).run() as Pair;
+      final b1 = Parser(input: values[j]).run() as Pair;
 
-//  [[[[6,7],[6,7]],[[7,7],[0,7]]],[[[8,7],[7,7]],[[8,8],[8,0]]]]
-//+ [[[[2,4],7],[6,[0,5]]],[[[6,8],[2,8]],[[2,1],[4,5]]]]
-//= [[[[7,7],[7,7]],[[7,8],[7,8]]],[[[8,9],[7,7]],[[9,5],[9,0]]]]
-//
-//  should be...
-//  [[[[7,0],[7,7]],[[7,7],[7,8]]],[[[7,7],[8,8]],[[7,7],[8,7]]]]
+      print('$a + $b');
+      final aPlusB = a.add(b).magnitude;
+      print(aPlusB);
 
-  for (final rawNumber in rawNumbers.skip(1)) {
-    final newNumber = parseNumber(rawNumber);
-    print('  $number');
-    print('+ $newNumber');
-    number = add(number, newNumber);
-    reduce(number);
-    print('= $number');
-    print('');
+      print('$b1 + $a1');
+      final bPlusA = b1.add(a1).magnitude;
+      print(bPlusA);
+
+      largestMagnitude = max(largestMagnitude, max(aPlusB, bPlusA));
+    }
   }
+  print(largestMagnitude);
 }
 
 void partOne() {
-  final rawNumbers = '''
-    [1,1]
-    [2,2]
-    [3,3]
-    [4,4]
-    [5,5]
-  '''
-      .trim()
-      .split('\n')
-      .map((l) => l.trim())
-      .toList();
-
-  final firstRawNumber = rawNumbers.first;
-  final firstNumber = parseNumber(firstRawNumber);
-  var number = firstNumber;
-
-  for (final rawNumber in rawNumbers.skip(1)) {
-    final newNumber = parseNumber(rawNumber);
-    number = add(number, newNumber);
-    print(number);
-    reduce(number);
-    print(number);
+  final lines = File('sample-input.txt').readAsLinesSync();
+  final values = lines.map((l) => Parser(input: l.trim()).run()).toList();
+  Pair result = values.first as Pair;
+  for (final value in values.skip(1)) {
+    print('  $result');
+    print('+ $value');
+    result = result.add(value as Pair);
+    print('= $result');
   }
+
+  print(result.magnitude);
 }
 
-void reduceWithExplodeAndSplitExample() {
-  var number = parseNumber('[[[[4,3],4],4],[7,[[8,4],9]]]');
-  number = add(number, parseNumber('[1,1]'));
-  print(number);
-  reduce(number);
-  print(number);
-}
+class Parser {
+  final String input;
+  int position = 0;
 
-void splitExamples() {
-  var number = parseNumber('[[[[0,7],4],[15,[0,13]]],[1,1]]');
-  var toSplit = findNextToSplit(number);
-  print(number);
-  print(toSplit);
+  Parser({required this.input});
 
-  number = parseNumber('[[[[0,7],4],[[7,8],[0,13]]],[1,1]]');
-  toSplit = findNextToSplit(number);
-  print(number);
-  print(toSplit);
-}
+  NumberOrPair run() {
+    return parseEither();
+  }
 
-void explodeExamples() {
-  var number = parseNumber('[[[[[9,8],1],2],3],4]');
-  var toExplode = findNextToExplode(number);
-  var regularToLeft = findRegularToLeft(toExplode!);
-  var regularToRight = findRegularToRight(toExplode);
-  print(number);
-  print(toExplode);
-  print(regularToLeft == null);
-  print(regularToRight!.value == 1);
-  reduce(number);
-  print(number);
-  print('--------------------------');
-
-  number = parseNumber('[7,[6,[5,[4,[3,2]]]]]');
-  toExplode = findNextToExplode(number);
-  regularToLeft = findRegularToLeft(toExplode!);
-  regularToRight = findRegularToRight(toExplode);
-  print(number);
-  print(toExplode);
-  print(regularToLeft?.value == 4);
-  print(regularToRight == null);
-  reduce(number);
-  print(number);
-  print('--------------------------');
-
-  number = parseNumber('[[6,[5,[4,[3,2]]]],1]');
-  toExplode = findNextToExplode(number);
-  regularToLeft = findRegularToLeft(toExplode!);
-  regularToRight = findRegularToRight(toExplode);
-  print(number);
-  print(toExplode);
-  print(regularToLeft!.value == 4);
-  print(regularToRight!.value == 1);
-  reduce(number);
-  print(number);
-  print('--------------------------');
-
-  number = parseNumber('[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]');
-  toExplode = findNextToExplode(number);
-  regularToLeft = findRegularToLeft(toExplode!);
-  regularToRight = findRegularToRight(toExplode);
-  print(number);
-  print(toExplode);
-  print(regularToLeft!.value == 1);
-  print(regularToRight!.value == 6);
-  reduce(number);
-  print(number);
-  print('--------------------------');
-
-  number = parseNumber('[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]');
-  toExplode = findNextToExplode(number);
-  regularToLeft = findRegularToLeft(toExplode!);
-  regularToRight = findRegularToRight(toExplode);
-  print(number);
-  print(toExplode);
-  print(regularToLeft!.value == 4);
-  print(regularToRight == null);
-  reduce(number);
-  print(number);
-  print('--------------------------');
-}
-
-void reduce(SnailfishPair number) {
-  var toExplode = findNextToExplode(number);
-  var toSplit = findNextToSplit(number);
-  print(number);
-  while (toExplode != null || toSplit != null) {
-    if (toExplode != null) {
-      var regularToLeft = findRegularToLeft(toExplode);
-      var regularToRight = findRegularToRight(toExplode);
-
-      final parent = (toExplode.parent as SnailfishPair);
-      final newNumber = RegularNumber(0)..parent = parent;
-      if (parent.left == toExplode) {
-        if (regularToRight != null &&
-            regularToRight.parent == toExplode.parent) {
-          final right = (toExplode.right as RegularNumber);
-          regularToRight.value = right.value + regularToRight.value;
-        }
-        parent.left = newNumber;
-      }
-      if (parent.right == toExplode) {
-        if (regularToLeft != null && regularToLeft.parent == toExplode.parent) {
-          final left = (toExplode.left as RegularNumber);
-          regularToLeft.value = left.value + regularToLeft.value;
-        }
-        parent.right = newNumber;
-      }
-
-      if (regularToLeft != null && regularToLeft.parent != toExplode.parent) {
-        regularToLeft.value =
-            regularToLeft.value + (toExplode.left as RegularNumber).value;
-      }
-      if (regularToRight != null && regularToRight.parent != toExplode.parent) {
-        regularToRight.value =
-            regularToRight.value + (toExplode.right as RegularNumber).value;
-      }
-    } else if (toSplit != null) {
-      final parent = toSplit.parent as SnailfishPair;
-      final leftValue = (toSplit.value / 2).floor();
-      final rightValue = (toSplit.value / 2).ceil();
-      final pair = SnailfishPair(
-        left: RegularNumber(leftValue),
-        right: RegularNumber(rightValue),
-      )..parent = parent;
-      if (parent.left == toSplit) {
-        parent.left = pair;
-      }
-      if (parent.right == toSplit) {
-        parent.right = pair;
-      }
+  NumberOrPair parseEither() {
+    if (currentCharacter == '[') {
+      return parsePair();
     }
-    toExplode = findNextToExplode(number);
-    toSplit = findNextToSplit(number);
-    print(number);
+    return parseNumber();
+  }
+
+  Pair parsePair() {
+    incrementPosition();
+    final left = parseEither();
+    incrementPosition();
+    final right = parseEither();
+    incrementPosition();
+    return Pair(left: left, right: right);
+  }
+
+  Number parseNumber() {
+    var start = position;
+    while (currentCharacter != ',' && currentCharacter != ']') {
+      incrementPosition();
+    }
+    final numberChars = input.substring(start, position);
+    final number = int.parse(numberChars);
+    return Number(value: number);
+  }
+
+  String get currentCharacter => input[position];
+
+  void incrementPosition() {
+    position++;
   }
 }
 
-RegularNumber? findRegularToLeft(
-  SnailfishPair number, [
-  SnailfishPair? previous,
-]) {
-  if (number.parent == null) {
-    if (number.left != previous) {
-      return findRightmostRegular(number.left);
-    }
-    return null;
-  }
+abstract class NumberOrPair {
+  Pair? parent;
 
-  final parent = number.parent! as SnailfishPair;
+  NumberOrPair();
 
-  if (parent.left != number) {
-    if (parent.left is RegularNumber) {
-      return parent.left as RegularNumber;
-    }
-    if (parent.left is SnailfishPair) {
-      return findRightmostRegular(parent.left);
-    }
-  }
+  int get depth => parent == null ? 1 : parent!.depth + 1;
 
-  return findRegularToLeft(parent, number);
+  bool get isRoot => parent == null;
+
+  bool get isLeft => parent?.left == this;
+
+  bool get isRight => parent?.right == this;
+
+  bool get isExplodable;
+
+  bool get isSplitable;
+
+  bool maybeExplode();
+
+  bool maybeSplit();
+
+  Number? findRightmostRegular();
+
+  Number? findLeftmostRegular();
+
+  int get magnitude;
 }
 
-RegularNumber? findRegularToRight(
-  SnailfishPair number, [
-  SnailfishPair? previous,
-]) {
-  if (number.parent == null) {
-    if (number.right != previous) {
-      return findLeftmostRegular(number.right);
-    }
-    return null;
-  }
-
-  final parent = number.parent! as SnailfishPair;
-
-  if (parent.right != number) {
-    if (parent.right is RegularNumber) {
-      return parent.right as RegularNumber;
-    }
-    if (parent.right is SnailfishPair) {
-      return findLeftmostRegular(parent.right);
-    }
-  }
-
-  return findRegularToRight(parent, number);
-}
-
-RegularNumber? findLeftmostRegular(SnailfishNumber root) {
-  if (root is RegularNumber) {
-    return root;
-  }
-
-  if (root is SnailfishPair) {
-    final leftNumber = findLeftmostRegular(root.left);
-    if (leftNumber != null) {
-      return leftNumber;
-    }
-
-    return findLeftmostRegular(root.right);
-  }
-}
-
-RegularNumber? findRightmostRegular(SnailfishNumber root) {
-  if (root is RegularNumber) {
-    return root;
-  }
-
-  if (root is SnailfishPair) {
-    final rightNumber = findRightmostRegular(root.right);
-    if (rightNumber != null) {
-      return rightNumber;
-    }
-
-    return findLeftmostRegular(root.left);
-  }
-}
-
-SnailfishPair? findNextToExplode(SnailfishPair number, [int depth = 1]) {
-  if (depth == 5) {
-    return number;
-  }
-
-  if (number.left is SnailfishPair) {
-    final left = findNextToExplode(number.left as SnailfishPair, depth + 1);
-    if (left != null) {
-      return left;
-    }
-  }
-
-  if (number.right is SnailfishPair) {
-    final right = findNextToExplode(number.right as SnailfishPair, depth + 1);
-    if (right != null) {
-      return right;
-    }
-  }
-
-  return null;
-}
-
-RegularNumber? findNextToSplit(SnailfishNumber number) {
-  if (number is RegularNumber && number.value >= 10) {
-    return number;
-  }
-
-  if (number is SnailfishPair) {
-    final left = findNextToSplit(number.left);
-    if (left != null) {
-      return left;
-    }
-
-    final right = findNextToSplit(number.right);
-    if (right != null) {
-      return right;
-    }
-  }
-
-  return null;
-}
-
-SnailfishPair add(SnailfishPair a, SnailfishPair b) {
-  return SnailfishPair(left: a, right: b);
-}
-
-SnailfishPair parseNumber(String rawNumber) {
-  int findComma(String rawNumber) {
-    var open = 0;
-    for (var i = 0; i < rawNumber.length; i++) {
-      final char = rawNumber[i];
-      if (char == '[') {
-        open++;
-      } else if (char == ']') {
-        open--;
-      } else if (char == ',') {
-        if (open == 1) {
-          return i;
-        }
-      }
-    }
-    throw Exception('malformed input!');
-  }
-
-  final commaIndex = findComma(rawNumber);
-
-  return SnailfishPair(
-    left: parseNumberInner(
-      rawNumber.substring(1, commaIndex),
-    ),
-    right: parseNumberInner(
-      rawNumber.substring(commaIndex + 1, rawNumber.length - 1),
-    ),
-  );
-}
-
-SnailfishNumber parseNumberInner(String raw) {
-  if (raw[0] != '[') {
-    return RegularNumber(int.parse(raw));
-  }
-  return parseNumber(raw);
-}
-
-abstract class SnailfishNumber {
-  SnailfishNumber? parent;
-
-  SnailfishNumber({this.parent});
-}
-
-class SnailfishPair extends SnailfishNumber {
-  SnailfishNumber left;
-  SnailfishNumber right;
-
-  SnailfishPair({required this.left, required this.right}) {
-    left.parent = this;
-    right.parent = this;
-  }
-
-  @override
-  bool operator ==(Object? other) =>
-      other is SnailfishPair &&
-      identical(parent, other.parent) &&
-      identical(left, other.left) &&
-      identical(right, other.right);
-
-  @override
-  String toString() {
-    return '[$left,$right]';
-  }
-}
-
-class RegularNumber extends SnailfishNumber {
+class Number extends NumberOrPair {
   int value;
 
-  RegularNumber(this.value);
+  Number({required this.value});
 
   @override
-  bool operator ==(Object? other) =>
-      other is RegularNumber &&
-      identical(parent, other.parent) &&
-      value == other.value;
+  String toString() => '$value';
 
   @override
-  String toString() {
-    return value.toString();
+  int get hashCode => Object.hash(value, value);
+
+  @override
+  bool get isExplodable => false;
+
+  @override
+  bool get isSplitable => value >= 10;
+
+  @override
+  bool maybeExplode() {
+    return false;
   }
+
+  @override
+  bool maybeSplit() {
+    if (!isSplitable) {
+      return false;
+    }
+
+    final newPair = Pair(
+      left: Number(value: (value / 2).floor()),
+      right: Number(value: (value / 2).ceil()),
+    );
+
+    if (isLeft) {
+      parent!.left = newPair;
+    } else {
+      parent!.right = newPair;
+    }
+
+    return true;
+  }
+
+  @override
+  Number? findLeftmostRegular() => this;
+
+  @override
+  Number? findRightmostRegular() => this;
+
+  int get magnitude => value;
+}
+
+class Pair extends NumberOrPair {
+  late NumberOrPair _left;
+  late NumberOrPair _right;
+
+  Pair({required NumberOrPair left, required NumberOrPair right}) {
+    this.left = left;
+    this.right = right;
+  }
+
+  NumberOrPair get left => _left;
+
+  NumberOrPair get right => _right;
+
+  set left(NumberOrPair value) {
+    _left = value;
+    value.parent = this;
+  }
+
+  set right(NumberOrPair value) {
+    _right = value;
+    value.parent = this;
+  }
+
+  @override
+  String toString() => '[$_left,$_right]';
+
+  @override
+  int get hashCode => Object.hash(_left, _right);
+
+  @override
+  bool get isExplodable {
+    if (_isSelfExplodable) {
+      return true;
+    }
+
+    return left.isExplodable || right.isExplodable;
+  }
+
+  bool get _isSelfExplodable {
+    if (depth >= 5) {
+      return left is Number && right is Number;
+    }
+    return false;
+  }
+
+  @override
+  bool get isSplitable => left.isSplitable || right.isSplitable;
+
+  @override
+  bool maybeExplode() {
+    if (_isSelfExplodable) {
+      final numberToLeft = findFirstRegularToLeft();
+      final numberToRight = findFirstRegularToRight();
+
+      numberToLeft?.value += (left as Number).value;
+      numberToRight?.value += (right as Number).value;
+
+      if (isLeft) {
+        parent!.left = Number(value: 0);
+      } else {
+        parent!.right = Number(value: 0);
+      }
+      return true;
+    }
+
+    return left.maybeExplode() || right.maybeExplode();
+  }
+
+  @override
+  bool maybeSplit() {
+    return left.maybeSplit() || right.maybeSplit();
+  }
+
+  Number? findFirstRegularToLeft() {
+    if (isRight) {
+      return parent!.left.findRightmostRegular();
+    } else {
+      return parent?.findFirstRegularToLeft();
+    }
+  }
+
+  Number? findFirstRegularToRight() {
+    if (isLeft) {
+      return parent!.right.findLeftmostRegular();
+    } else {
+      return parent?.findFirstRegularToRight();
+    }
+  }
+
+  @override
+  Number? findLeftmostRegular() {
+    return left.findLeftmostRegular();
+  }
+
+  @override
+  Number? findRightmostRegular() {
+    return right.findRightmostRegular();
+  }
+
+  Pair add(Pair other) {
+    return Pair(left: this, right: other)..reduce();
+  }
+
+  void reduce() {
+    while (isExplodable || isSplitable) {
+      maybeExplode() || maybeSplit();
+      // print(this);
+    }
+  }
+
+  int get magnitude => (3 * left.magnitude) + (2 * right.magnitude);
 }

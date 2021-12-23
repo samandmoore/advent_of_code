@@ -1,5 +1,0 @@
-name: day18
-environment:
-  sdk: ">= 2.14.0"
-dependencies:
-  collection: any
