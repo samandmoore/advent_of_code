@@ -12,7 +12,11 @@ class GameState {
   });
 
   @override
-  int get hashCode => Object.hash(scores, positions, turnIndex);
+  int get hashCode => Object.hash(
+        DeepCollectionEquality().hash(scores),
+        DeepCollectionEquality().hash(positions),
+        turnIndex,
+      );
 
   @override
   bool operator ==(Object? other) =>
@@ -47,7 +51,7 @@ void main() {
   };
   final winsByPlayer = {
     0: 0,
-    1: 1,
+    1: 0,
   };
 
   while (states.isNotEmpty) {
@@ -104,7 +108,7 @@ Iterable<int> getStartingPositions() {
     Player 1 starting position: 1
     Player 2 starting position: 5
   ''';
-  final startingPositions = sampleInput
+  final startingPositions = input
       .trim()
       .split('\n')
       .map(
