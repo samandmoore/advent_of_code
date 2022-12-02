@@ -1,0 +1,20 @@
+{
+  "configVersion": 2,
+  "packages": [
+    {
+      "name": "collection",
+      "rootUri": "file:///Users/sammoore/.pub-cache/hosted/pub.dartlang.org/collection-1.17.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "day01",
+      "rootUri": "../",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
+    }
+  ],
+  "generated": "2022-12-02T01:02:24.552256Z",
+  "generator": "pub",
+  "generatorVersion": "2.17.6"
+}
