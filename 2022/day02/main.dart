@@ -33,6 +33,19 @@ Play playFromString(String value) {
   }
 }
 
+Result resultFromString(String value) {
+  switch (value.toLowerCase()) {
+    case 'x':
+      return Result.lose;
+    case 'y':
+      return Result.draw;
+    case 'z':
+      return Result.win;
+    default:
+      throw Exception('Invalid result: $value');
+  }
+}
+
 enum Result {
   win,
   lose,
@@ -51,26 +64,31 @@ int scoreForResult(Result result) {
 }
 
 class Round {
-  final Play you;
   final Play opponent;
-  Round({required this.you, required this.opponent});
+  final Result result;
+  Round({required this.opponent, required this.result});
 
-  Result get result {
-    if (you == opponent) {
-      return Result.draw;
-    } else if (you == Play.rock && opponent == Play.scissors) {
-      return Result.win;
-    } else if (you == Play.paper && opponent == Play.rock) {
-      return Result.win;
-    } else if (you == Play.scissors && opponent == Play.paper) {
-      return Result.win;
-    } else {
-      return Result.lose;
+  Play get yourPlay {
+    switch (result) {
+      case Result.win:
+        return opponent == Play.rock
+            ? Play.paper
+            : opponent == Play.paper
+                ? Play.scissors
+                : Play.rock;
+      case Result.lose:
+        return opponent == Play.rock
+            ? Play.scissors
+            : opponent == Play.paper
+                ? Play.rock
+                : Play.paper;
+      case Result.draw:
+        return opponent;
     }
   }
 
   int get score {
-    return scoreForPlay(you) + scoreForResult(result);
+    return scoreForPlay(yourPlay) + scoreForResult(result);
   }
 }
 
@@ -78,15 +96,13 @@ void main() {
   final rawLines = File('input-part-1.txt').readAsLinesSync();
   final rounds = rawLines
       .map(
-        (line) => line
-            .split(' ')
-            .map(
-              (play) => playFromString(play),
-            )
-            .toList(),
+        (line) => line.split(' ').toList(),
       )
       .map(
-        (plays) => Round(opponent: plays.first, you: plays.last),
+        (inputs) => Round(
+          opponent: playFromString(inputs.first),
+          result: resultFromString(inputs.last),
+        ),
       )
       .toList();
   final yourScore = rounds.map((round) => round.score).reduce((a, b) => a + b);
