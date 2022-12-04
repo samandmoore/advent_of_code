@@ -8,6 +8,14 @@ class Range {
   bool covers(Range other) {
     return start <= other.start && end >= other.end;
   }
+
+  bool overlaps(Range other) {
+    return toList().intersection(other.toList()).isNotEmpty;
+  }
+
+  Set<int> toList() {
+    return List.generate(end - start + 1, (i) => start + i).toSet();
+  }
 }
 
 class Pair {
@@ -30,7 +38,7 @@ void main() {
   });
 
   final result = pairs
-      .where((pair) => pair.a.covers(pair.b) || pair.b.covers(pair.a))
+      .where((pair) => pair.a.overlaps(pair.b) || pair.b.overlaps(pair.a))
       .length;
 
   print(result);
