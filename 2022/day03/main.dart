@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:collection/collection.dart';
+
 class Rucksack {
   final String compartmentOne;
   final String compartmentTwo;
@@ -12,6 +14,10 @@ class Rucksack {
         .toSet()
         .intersection(compartmentTwo.split('').toSet())
         .first;
+  }
+
+  Set<String> get allItemsAsSet {
+    return Set.of((compartmentOne + compartmentTwo).split(''));
   }
 }
 
@@ -38,11 +44,14 @@ void main() {
         ),
       )
       .toList();
-  final itemInBothComparments = rucksacks.map((r) => r.itemInBothComparments);
-  print(itemInBothComparments);
+  final groups = rucksacks.slices(3);
+  final commonItems = groups.map((g) => findCommonItemInAll(g));
+  print(commonItems);
+  print(commonItems.map((e) => itemToPriority(e)).reduce((a, b) => a + b));
+}
 
-  print(itemInBothComparments.map((item) => itemToPriority(item)));
-  print(itemInBothComparments
-      .map((item) => itemToPriority(item))
-      .reduce((a, b) => a + b));
+String findCommonItemInAll(List<Rucksack> group) {
+  final allItems =
+      group.map((r) => r.allItemsAsSet).reduce((a, b) => a.intersection(b));
+  return allItems.first;
 }
