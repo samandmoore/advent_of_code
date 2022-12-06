@@ -68,8 +68,14 @@ void main() {
   instructions.forEach((instruction) {
     final fromStack = stacks[instruction.from]!;
     final toStack = stacks[instruction.to]!;
+
+    final tempStack = Stack<String>();
     for (var i = 0; i < instruction.count; i++) {
-      toStack.push(fromStack.pop());
+      tempStack.push(fromStack.pop());
+    }
+
+    for (var i = 0; i < instruction.count; i++) {
+      toStack.push(tempStack.pop());
     }
   });
 
