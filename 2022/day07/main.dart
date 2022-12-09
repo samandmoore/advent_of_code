@@ -37,10 +37,7 @@ void main() {
       switch (command) {
         case 'cd':
           if (parts[2] == '..') {
-            final currentDirSize = dirs[buildDirName(currentPath)]!;
             currentPath.removeLast();
-            dirs[buildDirName(currentPath)] =
-                currentDirSize + dirs[buildDirName(currentPath)]!;
           } else {
             currentPath.add(parts[2]);
             dirs.putIfAbsent(buildDirName(currentPath), () => 0);
@@ -59,7 +56,11 @@ void main() {
       );
     } else if (RegExp(r'\d+').hasMatch(parts.first)) {
       final size = int.parse(parts.first);
-      dirs[buildDirName(currentPath)] = dirs[buildDirName(currentPath)]! + size;
+      final paths = List.of(currentPath);
+      while (paths.isNotEmpty) {
+        dirs[buildDirName(paths)] = dirs[buildDirName(paths)]! + size;
+        paths.removeLast();
+      }
     } else {
       throw Exception('Unknown line: $line');
     }
@@ -67,13 +68,24 @@ void main() {
   }
 
   print(dirs);
-  dirs.removeWhere((key, value) {
-    return value > 100000;
-  });
-  dirs.forEach((key, value) {
-    print('$key $value');
-  });
-  print(dirs.values.reduce((value, element) => value + element));
+
+  final totalDiskSpace = 70000000;
+  final requiredDiskSpace = 30000000;
+  final totalUsedSpace = dirs['/']!;
+  final totalUnusedSpace = totalDiskSpace - totalUsedSpace;
+  print(totalUnusedSpace);
+
+  final entriesSortedBySizeSmallestFirst = dirs.entries.toList()
+    ..sort((a, b) => a.value.compareTo(b.value));
+
+  for (final dir in entriesSortedBySizeSmallestFirst) {
+    final usedSpace = dir.value;
+    if (totalUnusedSpace + usedSpace >= requiredDiskSpace) {
+      print(dir.key);
+      print(dir.value);
+      break;
+    }
+  }
 }
 
 String buildDirName(List<String> parts) {
