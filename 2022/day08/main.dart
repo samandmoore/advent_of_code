@@ -8,20 +8,21 @@ void main() {
       )
       .toList();
 
-  var visibleCount = 0;
+  var highestScenicScore = 0;
 
   for (var y = 0; y < grid.length; y++) {
     for (var x = 0; x < grid[y].length; x++) {
       final cell = cellFor(grid, x, y)!;
-      if (cell.isEdge) {
-        visibleCount++;
-      } else if (cell.isVisible) {
-        visibleCount++;
+      if (!cell.isEdge) {
+        final score = cell.caclulateScenicScore();
+        if (score > highestScenicScore) {
+          highestScenicScore = score;
+        }
       }
     }
   }
 
-  print(visibleCount);
+  print(highestScenicScore);
 }
 
 Cell? cellFor(Grid grid, int x, int y) {
@@ -66,6 +67,25 @@ class Cell {
 
   int get value {
     return grid[y][x];
+  }
+
+  int caclulateScenicScore() {
+    final distanceUp = viewingDistanceGoing(this, (cell) => cell?.up);
+    final distanceDown = viewingDistanceGoing(this, (cell) => cell?.down);
+    final distanceLeft = viewingDistanceGoing(this, (cell) => cell?.left);
+    final distanceRight = viewingDistanceGoing(this, (cell) => cell?.right);
+    return distanceUp * distanceDown * distanceLeft * distanceRight;
+  }
+
+  int viewingDistanceGoing(Cell? current, Cell? Function(Cell? cell) next) {
+    final nextCell = next(current);
+    if (nextCell == null) {
+      return 0;
+    }
+    if (value > nextCell.value) {
+      return 1 + viewingDistanceGoing(nextCell, next);
+    }
+    return 1;
   }
 
   bool get isVisible {
