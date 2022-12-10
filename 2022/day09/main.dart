@@ -96,31 +96,35 @@ void main() {
     return Instruction(direction, distance);
   }).toList();
 
-  var head = Point('H', 0, 0);
-  var tail = Point('T', 0, 0);
+  final knots = List<Point>.generate(10, (index) => Point('$index', 0, 0));
   final tailVisited = <Point>{};
-  tailVisited.add(tail);
+  tailVisited.add(knots.last);
 
   instructions.forEach((instruction) {
     print(instruction);
     for (var i = 0; i < instruction.distance; i++) {
       switch (instruction.direction) {
         case 'U':
-          head = head.moveUp();
+          knots[0] = knots[0].moveUp();
           break;
         case 'D':
-          head = head.moveDown();
+          knots[0] = knots[0].moveDown();
           break;
         case 'L':
-          head = head.moveLeft();
+          knots[0] = knots[0].moveLeft();
           break;
         case 'R':
-          head = head.moveRight();
+          knots[0] = knots[0].moveRight();
           break;
       }
-      tail = checkAndUpdateTail(head, tail);
-      tailVisited.add(tail);
-      print(tail);
+      print(knots[0]);
+      for (var knotI = 1; knotI < knots.length; knotI++) {
+        final head = knots[knotI - 1];
+        final tail = knots[knotI];
+        knots[knotI] = checkAndUpdateTail(head, tail);
+        print(knots[knotI]);
+      }
+      tailVisited.add(knots.last);
     }
   });
 
