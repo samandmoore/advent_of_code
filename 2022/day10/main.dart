@@ -1,16 +1,44 @@
 import 'dart:io';
 
-class Instruction {
-  Instruction();
+abstract class Instruction {
+  int cyclesLeft;
+  Instruction(this.cyclesLeft);
+
+  int Function(int) consumeCycle();
+
+  bool get isComplete => cyclesLeft == 0;
 }
 
 class NoopInstruction extends Instruction {
-  NoopInstruction();
+  NoopInstruction() : super(1);
+
+  @override
+  int Function(int) consumeCycle() {
+    print('noop (start)');
+    cyclesLeft--;
+    print('noop (end)');
+    return (register) => register;
+  }
 }
 
 class AddInstruction extends Instruction {
   final int argument;
-  AddInstruction(this.argument);
+  AddInstruction(this.argument) : super(2);
+
+  @override
+  int Function(int) consumeCycle() {
+    if (cyclesLeft == 1) {
+      print('addx $argument (start)');
+    }
+    cyclesLeft--;
+    if (cyclesLeft == 0) {
+      print('addx $argument (end)');
+      return (register) => register + argument;
+    } else {
+      print('addx $argument ($cyclesLeft/2)');
+      return (register) => register;
+    }
+  }
 }
 
 void main() {
@@ -27,43 +55,52 @@ void main() {
         throw Exception('Unknown operation: $operation');
     }
   }).toList();
-  var register = 1;
-  var cycle = 1;
+
+  var spriteCenterIndex = 1;
   final signalStrengths = <int, int>{};
-  final increaseCycle = () {
-    cycle += 1;
-    print('Cycle $cycle: x = ${register}');
-  };
+  final crt =
+      List<List<int>>.generate(6, (_) => List<int>.generate(40, (_) => 0));
+  var row = 0;
+  var col = 0;
 
-  final captureRegisterValue = () {
+  Instruction currentInstruction = instructions.removeAt(0);
+  int Function(int) nextOperation = (input) => input;
+
+  for (var cycle = 1; cycle <= 240 && instructions.isNotEmpty; cycle++) {
+    spriteCenterIndex = nextOperation.call(spriteCenterIndex);
+    print('Cycle $cycle start: x = ${spriteCenterIndex}');
+
+    nextOperation = currentInstruction.consumeCycle();
+
+    if (currentInstruction.isComplete) {
+      currentInstruction = instructions.removeAt(0);
+    }
+
     if ((cycle ~/ 20).isOdd && cycle % 20 == 0) {
-      signalStrengths[cycle] = register;
+      signalStrengths[cycle] = spriteCenterIndex;
     }
-  };
 
-  instructions.forEach((ins) {
-    if (ins is NoopInstruction) {
-      print('Cycle $cycle: noop (start)');
-      captureRegisterValue();
-      increaseCycle();
-      captureRegisterValue();
-      print('Cycle $cycle: noop (end)');
-    } else if (ins is AddInstruction) {
-      print('Cycle $cycle: addx ${ins.argument} (start)');
-      captureRegisterValue();
-      increaseCycle();
-      captureRegisterValue();
-      increaseCycle();
-      register += ins.argument;
-      captureRegisterValue();
-      print('Cycle $cycle: addx ${ins.argument} (end)');
+    final spriteStartIndex = spriteCenterIndex - 1;
+    final spriteEndIndex = spriteCenterIndex + 1;
+    if (col >= spriteStartIndex && col <= spriteEndIndex) {
+      crt[row][col] = 1;
     }
-  });
-  print(register);
+
+    print('Cycle $cycle end: x = ${spriteCenterIndex}');
+    if (col < 39) {
+      col++;
+    } else {
+      col = 0;
+      row++;
+    }
+  }
+
+  print(spriteCenterIndex);
   print(signalStrengths);
   print(
     signalStrengths.entries
         .map((e) => e.key * e.value)
         .reduce((value, element) => value + element),
   );
+  crt.map((r) => r.map((c) => c == 0 ? '.' : '#').join()).forEach(print);
 }
